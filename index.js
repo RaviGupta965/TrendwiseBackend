@@ -53,7 +53,7 @@ app.post("/api/article", async (req, res) => {
     for (const topic of topics) {
       const exists = await Article.findOne({ title: topic });
       if (exists) continue;
-      if (cnt === 2) {
+      if (cnt === 1) {
         break;
       }
       const prompt = `Write a detailed SEO-friendly blog article on: "${topic}".
