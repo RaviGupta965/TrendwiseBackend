@@ -3,7 +3,7 @@ import cors from "cors";
 import { connectToDatabase } from "./mongoDB.js";
 import Article from "./article.schema.js";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import puppeteer from "puppeteer-core";
+import puppeteer from "puppeteer";
 import slugify from "slugify";
 import dotenv from "dotenv";
 
@@ -26,7 +26,7 @@ app.post("/api/article", async (req, res) => {
 
     // Step 1: Fetch Trending Topics using Puppeteer
     const browser = await puppeteer.launch({
-      executablePath: "/usr/bin/google-chrome", // ✅ use system chrome
+      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH, // ✅ use system chrome
       headless: "new",
       args: [
         "--no-sandbox",
