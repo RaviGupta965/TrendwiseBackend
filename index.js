@@ -3,7 +3,7 @@ import cors from "cors";
 import { connectToDatabase } from "./mongoDB.js";
 import Article from "./article.schema.js";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import puppeteer from "puppeteer";
+import puppeteer from "puppeteer-core";
 import slugify from "slugify";
 import dotenv from "dotenv";
 
@@ -24,36 +24,43 @@ app.post("/api/article", async (req, res) => {
   try {
     await connectToDatabase();
 
-  // Step 1: Fetch Trending Topics using Puppeteer
-  const browser = await puppeteer.launch({
-    headless: "new",
-    args: ["--no-sandbox", "--disable-setuid-sandbox"],
-  });
-  const page = await browser.newPage();
-  await page.goto("https://trends24.in/india/", {
-    waitUntil: "networkidle2",
-  });
-
-  const topics = await page.evaluate(() => {
-    const titles = [];
-    document.querySelectorAll(".trend-link").forEach((el) => {
-      titles.push(el.textContent.trim());
+    // Step 1: Fetch Trending Topics using Puppeteer
+    const browser = await puppeteer.launch({
+      executablePath: "/usr/bin/chromium-browser", // ✅ use system chrome
+      headless: "new",
+      args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--single-process",
+        "--no-zygote",
+        "--disable-gpu",
+      ],
     });
-    return titles; // limit to 10 topics
-  });
-  await browser.close();
+    const page = await browser.newPage();
+    await page.goto("https://trends24.in/india/", {
+      waitUntil: "networkidle2",
+    });
 
-  // Step 2: Generate and save article for each topic
-  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-  const generated = [];
-  let cnt = 0;
-  for (const topic of topics) {
-    const exists = await Article.findOne({ title: topic });
-    if (exists) continue;
-    if (cnt === 2) {
-      break;
-    }
-    const prompt = `Write a detailed SEO-friendly blog article on: "${topic}".
+    const topics = await page.evaluate(() => {
+      const titles = [];
+      document.querySelectorAll(".trend-link").forEach((el) => {
+        titles.push(el.textContent.trim());
+      });
+      return titles; // limit to 10 topics
+    });
+    await browser.close();
+
+    // Step 2: Generate and save article for each topic
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const generated = [];
+    let cnt = 0;
+    for (const topic of topics) {
+      const exists = await Article.findOne({ title: topic });
+      if (exists) continue;
+      if (cnt === 2) {
+        break;
+      }
+      const prompt = `Write a detailed SEO-friendly blog article on: "${topic}".
 Structure it with:
 - A title should be same as topic name which i am providing
 - A slug (kebab-case)
@@ -75,27 +82,27 @@ Return JSON like:
   "media": [""]
 };`;
 
-    try {
-      const result = await model.generateContent(prompt);
-      const text = result.response.text().trim();
-      const jsonText = text.replace(/```json|```/g, "").trim();
-      const articleData = JSON.parse(jsonText);
-      // Fallback in case Gemini misses the slug
-      if (!articleData.slug) {
-        articleData.slug = slugify(topic, { lower: true });
-      }
+      try {
+        const result = await model.generateContent(prompt);
+        const text = result.response.text().trim();
+        const jsonText = text.replace(/```json|```/g, "").trim();
+        const articleData = JSON.parse(jsonText);
+        // Fallback in case Gemini misses the slug
+        if (!articleData.slug) {
+          articleData.slug = slugify(topic, { lower: true });
+        }
 
-      const newArticle = await Article.create(articleData);
-      cnt++;
-      generated.push(newArticle.slug);
-      await delay(2000);
-    } catch (err) {
-      console.error(`Failed on topic: ${topic}`, err.message);
-      continue;
+        const newArticle = await Article.create(articleData);
+        cnt++;
+        generated.push(newArticle.slug);
+        await delay(2000);
+      } catch (err) {
+        console.error(`Failed on topic: ${topic}`, err.message);
+        continue;
+      }
     }
-  }
-  console.log("your feed has been refreshed reload");
-  return Response.json({ success: true, generated });
+    console.log("your feed has been refreshed reload");
+    return res.status(200).json({ success: true, generated });
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: error.message });
