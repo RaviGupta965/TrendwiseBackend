@@ -26,7 +26,7 @@ app.post("/api/article", async (req, res) => {
 
     // Step 1: Fetch Trending Topics using Puppeteer
     const browser = await puppeteer.launch({
-      executablePath: "/usr/bin/chromium-browser", // ✅ use system chrome
+      executablePath: "/usr/bin/google-chrome", // ✅ use system chrome
       headless: "new",
       args: [
         "--no-sandbox",
