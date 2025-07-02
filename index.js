@@ -25,12 +25,12 @@ app.post("/api/article", async (req, res) => {
 
     // Step 1: Fetch Trending Topics using Puppeteer
     const browser = await chromium.puppeteer.launch({
-      args: chromium.args,
-      defaultViewport: chromium.defaultViewport,
-      executablePath: await chromium.executablePath,
-      headless: chromium.headless,
+      executablePath:
+        process.env.PUPPETEER_EXECUTABLE_PATH || "/usr/bin/chromium",
+      headless: true,
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
     });
-    
+
     const page = await browser.newPage();
     await page.goto("https://trends24.in/india/", {
       waitUntil: "networkidle2",
