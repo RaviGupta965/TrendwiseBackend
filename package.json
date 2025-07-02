@@ -7,11 +7,13 @@
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
+    "chrome-aws-lambda": "^10.1.0",
     "cors": "^2.8.5",
     "dotenv": "^17.0.1",
     "express": "^5.1.0",
     "mongoose": "^8.16.1",
     "puppeteer": "^16.1.0",
+    "puppeteer-core": "^24.11.2",
     "slugify": "^1.6.6"
   }
 }

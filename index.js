@@ -6,7 +6,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import puppeteer from "puppeteer";
 import slugify from "slugify";
 import dotenv from "dotenv";
-
+import chromium from "chrome-aws-lambda";
 dotenv.config();
 
 const app = express();
@@ -25,21 +25,17 @@ app.post("/api/article", async (req, res) => {
     await connectToDatabase();
 
     // Step 1: Fetch Trending Topics using Puppeteer
-    const browser = await puppeteer.launch({
-      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH, // ✅ use system chrome
-      headless: "new",
-      args: [
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--single-process",
-        "--no-zygote",
-        "--disable-gpu",
-      ],
+    const browser = await chromium.puppeteer.launch({
+      args: chromium.args,
+      defaultViewport: chromium.defaultViewport,
+      executablePath: await chromium.executablePath,
+      headless: chromium.headless,
     });
+    
     const page = await browser.newPage();
     await page.goto("https://trends24.in/india/", {
       waitUntil: "networkidle2",
-      timeout: 60000 // ← 60 seconds instead of 30
+      timeout: 60000, // ← 60 seconds instead of 30
     });
 
     const topics = await page.evaluate(() => {
