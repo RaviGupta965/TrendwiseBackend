@@ -39,6 +39,7 @@ app.post("/api/article", async (req, res) => {
     const page = await browser.newPage();
     await page.goto("https://trends24.in/india/", {
       waitUntil: "networkidle2",
+      timeout: 60000 // ← 60 seconds instead of 30
     });
 
     const topics = await page.evaluate(() => {
