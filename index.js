@@ -3,7 +3,6 @@ import cors from "cors";
 import { connectToDatabase } from "./mongoDB.js";
 import Article from "./article.schema.js";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import puppeteer from "puppeteer";
 import slugify from "slugify";
 import dotenv from "dotenv";
 import chromium from "chrome-aws-lambda";
