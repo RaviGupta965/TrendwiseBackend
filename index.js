@@ -37,7 +37,7 @@ app.post("/api/article", async (req, res) => {
     });
 
      const topics = await page.evaluate(() => {
-      return Array.from(document.querySelectorAll(".trend-card .trend-card__list li a")).map((el) =>
+      return Array.from(document.querySelectorAll(".trend-name")).map((el) =>
         el.textContent.trim()
       );
     });
