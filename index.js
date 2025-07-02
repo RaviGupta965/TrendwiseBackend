@@ -5,7 +5,7 @@ import Article from "./article.schema.js";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import slugify from "slugify";
 import dotenv from "dotenv";
-import chromium from "chrome-aws-lambda";
+import puppeteer from "puppeteer";
 dotenv.config();
 
 const app = express();
@@ -24,25 +24,22 @@ app.post("/api/article", async (req, res) => {
     await connectToDatabase();
 
     // Step 1: Fetch Trending Topics using Puppeteer
-    const browser = await chromium.puppeteer.launch({
-      executablePath:
-        process.env.PUPPETEER_EXECUTABLE_PATH || "/usr/bin/chromium",
+    const browser = await puppeteer.launch({
       headless: true,
       args: ["--no-sandbox", "--disable-setuid-sandbox"],
+      timeout: 0,
     });
 
     const page = await browser.newPage();
     await page.goto("https://trends24.in/india/", {
-      waitUntil: "networkidle2",
-      timeout: 60000, // ← 60 seconds instead of 30
+      waitUntil: "domcontentloaded", // use domcontentloaded to reduce timeout risk
+      timeout: 0, // no navigation timeout
     });
 
-    const topics = await page.evaluate(() => {
-      const titles = [];
-      document.querySelectorAll(".trend-link").forEach((el) => {
-        titles.push(el.textContent.trim());
-      });
-      return titles; // limit to 10 topics
+     const topics = await page.evaluate(() => {
+      return Array.from(document.querySelectorAll(".trend-card .trend-card__list li a")).map((el) =>
+        el.textContent.trim()
+      );
     });
     await browser.close();
 
