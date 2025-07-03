@@ -35,7 +35,7 @@ app.post("/api/article", async (req, res) => {
       timeout: 0, // no navigation timeout
     });
 
-     const topics = await page.evaluate(() => {
+    const topics = await page.evaluate(() => {
       return Array.from(document.querySelectorAll(".trend-name")).map((el) =>
         el.textContent.trim()
       );
@@ -49,7 +49,7 @@ app.post("/api/article", async (req, res) => {
     for (const topic of topics) {
       const exists = await Article.findOne({ title: topic });
       if (exists) continue;
-      if (cnt === 5) {
+      if (cnt === 1) {
         break;
       }
       const prompt = `Write a detailed SEO-friendly blog article on: "${topic}".
@@ -76,9 +76,17 @@ Return JSON like:
 
       try {
         const result = await model.generateContent(prompt);
-        const text = result.response.text().trim();
+        const rawText = await result.response.text(); // ✅ correct
+        const text = rawText.trim();
+        console.log(text);
         const jsonText = text.replace(/```json|```/g, "").trim();
-        const articleData = JSON.parse(jsonText);
+        let articleData;
+        try {
+          articleData = JSON.parse(jsonText);
+        } catch (err) {
+          console.error(`❌ JSON parse failed on topic: ${topic}`, err.message);
+          continue;
+        }
         // Fallback in case Gemini misses the slug
         if (!articleData.slug) {
           articleData.slug = slugify(topic, { lower: true });
