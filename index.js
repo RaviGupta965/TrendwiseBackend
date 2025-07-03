@@ -5,7 +5,8 @@ import Article from "./article.schema.js";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import slugify from "slugify";
 import dotenv from "dotenv";
-import puppeteer from "puppeteer";
+import chromium from "chrome-aws-lambda";
+import puppeteer from "puppeteer-core";
 dotenv.config();
 
 const app = express();
@@ -22,11 +23,11 @@ app.post("/api/article", async (req, res) => {
   try {
     await connectToDatabase();
 
-    // Step 1: Fetch Trending Topics using Puppeteer
+   // ✅ 2. Modified puppeteer.launch for Render compatibility
     const browser = await puppeteer.launch({
-      headless: true,
-      args: ["--no-sandbox", "--disable-setuid-sandbox"],
-      timeout: 0,
+      args: chromium.args,
+      executablePath: await chromium.executablePath || "/usr/bin/chromium-browser", // fallback path
+      headless: chromium.headless,
     });
 
     const page = await browser.newPage();
@@ -49,7 +50,7 @@ app.post("/api/article", async (req, res) => {
     for (const topic of topics) {
       const exists = await Article.findOne({ title: topic });
       if (exists) continue;
-      if (cnt === 5) {
+      if (cnt === 1) {
         break;
       }
       const prompt = `Write a detailed SEO-friendly blog article on: "${topic}".
@@ -101,7 +102,7 @@ Return JSON like:
   }
 });
 
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
