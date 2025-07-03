@@ -13,7 +13,6 @@ app.use(cors());
 app.use(express.json());
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-
 // Utility delay
 function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -44,7 +43,7 @@ app.post("/api/article", async (req, res) => {
     await browser.close();
 
     // Step 2: Generate and save article for each topic
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
     const generated = [];
     let cnt = 0;
     for (const topic of topics) {
